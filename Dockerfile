@@ -1,66 +1,72 @@
-FROM alpine:3.9 as build1
+FROM alpine:3.13 as builder
 
-RUN apk --no-cache add gcc
-RUN apk --no-cache add g++
-RUN apk --no-cache add libc-dev
-RUN apk --no-cache add zlib-dev
-RUN apk --no-cache add openssl-dev
-RUN apk --no-cache add git
-RUN apk --no-cache add autoconf automake make
+SHELL ["/bin/sh", "-euo", "pipefail", "-xc"]
 
-RUN cd /usr/lib && ln -s libboost_thread-mt.so libboost_thread.so
+COPY notbit-alpine.patch /usr/local/src/notbit-alpine.patch
 
-WORKDIR /
-RUN echo trigger6
-RUN git clone https://github.com/yshurik/notbit.git
-#COPY notbit /notbit
+RUN apk --no-cache -U upgrade \
+	&&  apk --no-cache add \
+		gcc \
+		g++ \
+		libc-dev \
+		zlib-dev \
+		openssl-dev \
+		git \
+		autoconf \
+		automake \
+		make \
+		patch \
+	&& ( cd /usr/lib && ln -s libboost_thread-mt.so libboost_thread.so ) \
+	&& mkdir -p /usr/local/src \
+	&& ( cd /usr/local/src \
+		&& git clone https://github.com/yshurik/notbit.git ) \
+	&& ( cd /usr/local/src/notbit \
+		&& git config pull.rebase true \
+		&& git config --global user.email "dockerfile@docker.com" \
+		&& git config --global user.name "Container Dockerfile" \
+		&& git checkout smtp \
+		&& git checkout ac873b4e79d07ce1a07a6a6b1a229defc7c3ed06 \
+		&& git remote add upstream https://github.com/antorunexe/notbit.git \
+		&& git fetch upstream \
+		&& git pull upstream master ) \
+	&& ( cd /usr/local/src/notbit && ./autogen.sh --prefix=/ ) \
+	&& ( cd /usr/local/src/notbit \
+		&& patch -p1 < /usr/local/src/notbit-alpine.patch \
+		&& make && make install ) \
+	&& ldd /bin/notbit && ( /bin/notbit -h || : )
 
-WORKDIR /notbit
-RUN git checkout smtp
-RUN ./autogen.sh --prefix=/ # || cat config.log
 
-WORKDIR /
-COPY notbit-alpine.patch /1.patch
-RUN patch -p0 < 1.patch
 
-WORKDIR /notbit
-#RUN make clean
-RUN make
-RUN make install
+FROM alpine:3.13 as notbit
 
-RUN notbit -h || echo ok
-RUN ldd /bin/notbit
+SHELL ["/bin/sh", "-euo", "pipefail", "-xc"]
 
-FROM alpine:3.9 as notbit1
+RUN apk --no-cache -U upgrade \
+	&& apk --no-cache add \
+		zlib \
+		openssl
 
-RUN apk --no-cache add zlib
-RUN apk --no-cache add openssl
-
-COPY --from=build1 /bin/notbit /bin/notbit
-COPY --from=build1 /bin/notbit-keygen /bin/notbit-keygen
-COPY --from=build1 /bin/notbit-sendmail /bin/notbit-sendmail
-RUN ldd /bin/notbit
+COPY --from=builder /bin/notbit /bin/notbit
+COPY --from=builder /bin/notbit-keygen /bin/notbit-keygen
+COPY --from=builder /bin/notbit-sendmail /bin/notbit-sendmail
 
 COPY entrypoint.sh /entrypoint.sh
 COPY firstrun.sh /firstrun.sh
-
-RUN mkdir /data
-RUN mkdir /data/notbit
-RUN mkdir /data/maildir
-
-EXPOSE 8444 2525 143
-
-RUN apk --no-cache add bash
-RUN apk --no-cache add dovecot
 COPY dovecot.conf /etc/dovecot/dovecot.conf
-RUN adduser -D bm
-RUN echo bm:bm | chpasswd
-RUN cd /home/bm && ln -s /data/maildir
-RUN chown -R -c bm:bm /data
-RUN ls -al /data
+
+RUN ldd /bin/notbit \
+	&& ( /bin/notbit -h || : ) \
+	&& mkdir /data \
+	&& mkdir /data/notbit \
+	&& mkdir /data/maildir \
+	&& apk --no-cache add dovecot \
+	&& adduser -D user \
+	&& echo user:0notbit0 | chpasswd \
+	&& ( cd /home/user && ln -s /data/maildir ) \
+	&& chown -R -c user:user /data
+
+WORKDIR /home/user
+ENV SOCKS_ADDRESS
 VOLUME ["/data"]
-RUN ls -al /data
-WORKDIR /data
-
+EXPOSE 25 143 8444
 ENTRYPOINT ["/entrypoint.sh"]
-

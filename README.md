@@ -33,7 +33,7 @@ docker volume create notbit-data
 ```
 
 Then the docker container can be started with appropriate port mappings for
-IMAP (30143) and SMTP(30025).
+IMAP (`30143`) and SMTP (`30025`).
 
 ```bash
 docker run -v notbit-data:/data -d --name notbit \

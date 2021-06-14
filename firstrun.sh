@@ -2,16 +2,7 @@
 sleep 30
 if [ ! -f /data/notbit/keys.dat ]
 then
-	echo "Generating initial address"
-	export FIRSTADDR=$(notbit-keygen)
-	echo $FIRSTADDR
-
-echo -e "From: $FIRSTADDR@bitmessage\\n"\
-"To: $FIRSTADDR@bitmessage\\n"\
-"Subject: Welcome to Bitmessage system\\n"\
-"\\n"\
-"Hello from Bitmessage\\n\\n"\
-"Your personal address is $FIRSTADDR@bitmessage\\n\\n" | notbit-sendmail
-
+	export A=$(notbit-keygen)
+	echo -e "From: $A@bitmessage\\nTo: $A@bitmessage\\nSubject: Welcome to Notbit\\n\\nHello from Notbit,\\n\\nYour address is $A@bitmessage\\n" | \
+		notbit-sendmail
 fi
-

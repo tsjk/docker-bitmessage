@@ -1,22 +1,17 @@
-#!/bin/bash
-set -e
-set -x
-pid=0
-
-sigterm_handler() {
-  echo "sigterm handler called..."
-    if [ $pid -ne 0 ]; then
-      kill -TERM "$pid"
-      wait "$pid"
-    fi
-    exit 0;
-}
-trap 'kill ${!}; sigterm_handler' SIGTERM
-
-echo Starting dovecot
-dovecot -c /etc/dovecot/dovecot.conf
-echo Start first run check
-su -l bm -c "sh /firstrun.sh &"
+#!/bin/sh
+echo -n 'Starting dovecot... '; dovecot -c /etc/dovecot/dovecot.conf && echo "ok." || { echo "failed!"; exit 1; }
+echo -n "Launching first run check... "; su -l bm -c "sh /firstrun.sh &"; echo "launched."
+echo "Starting Notbit."
+while :
+do
+  if [ -n "$SOCKS_ADDRESS" ]
+  then
+    su -l user -c "notbit -s 25 -r $SOCKS_ADDRESS -B -D /data/notbit -m /data/maildir -l /data/notbit.log"
+  else
+    su -l user -c "notbit -s 25 -D /data/notbit -m /data/maildir -l /data/notbit.log"
+  fi
+  echo -n "Notbit exited with code $?... "; sleep 15: echo "Restarting Notbit."
+done
 
 while true
 do

@@ -3,8 +3,7 @@
 The repository is missing link to run [Bitmessage](http://bitmessage.org)
 as a docker container and provide IMAP and SMTP access for communications.
 
-It is based on [Notbit](https://github.com/bpeel/notbit) which is a minimal client for the
-network.
+It is based on [Notbit](https://github.com/bpeel/notbit) which is a minimal client for the network.
 
 That way the bitmessage network can be used with
 any compliant mail program such as Thunderbird or Apple Mail.
@@ -33,7 +32,7 @@ docker volume create notbit-data
 Then the docker container can be started with appropriate port mappings for IMAP (30143) and SMTP(30025).
 
 ```bash
-docker run -v bm-data:/data -d --name nitbit \
+docker run -v notbit-data:/data -d --name notbit \
 	-p 8444:8444 -p 127.0.0.1:30025:25 -p 127.0.0.1:30143:143 local/notbit:latest
 ```
 

@@ -3,7 +3,8 @@
 The repository is missing link to run [Bitmessage](http://bitmessage.org)
 as a docker container and provide IMAP and SMTP access for communications.
 
-It is based on [Notbit](https://github.com/bpeel/notbit) which is a minimal client for the network.
+It is based on [Notbit](https://github.com/bpeel/notbit) which is a minimal
+client for the network.
 
 That way the bitmessage network can be used with
 any compliant mail program such as Thunderbird or Apple Mail.
@@ -12,8 +13,9 @@ Also note Notbit is a work in progress and currently has some limitations.
 It can already send and receive messages to regular addresses but it
 doesn't yet support channels or broadcasts.
 
-The docker image is compact (~20MB) alpine-based, can run on Linux / Mac / Windows with
-appropriate setup of Mail client supporting IMAP and SMTP
+The docker image is compact (~20MB) alpine-based, can run on
+Linux / Mac / Windows with appropriate setup of Mail client supporting
+IMAP and SMTP
 
 # Disclaimer
 
@@ -23,39 +25,49 @@ wouldn't recommend using for anything highly sensitive.
 
 # Running bitmessage docker container
 
-First you may want to have dedicated docker volume for bitmessage data (keys etc):
+First you may want to have dedicated docker volume for bitmessage data
+(keys etc):
 
 ```bash
 docker volume create notbit-data
 ```
 
-Then the docker container can be started with appropriate port mappings for IMAP (30143) and SMTP(30025).
+Then the docker container can be started with appropriate port mappings for
+IMAP (30143) and SMTP(30025).
 
 ```bash
 docker run -v notbit-data:/data -d --name notbit \
-	-p 8444:8444 -p 127.0.0.1:30025:25 -p 127.0.0.1:30143:143 local/notbit:latest
+	-p 8444:8444 -p 127.0.0.1:30025:25 -p 127.0.0.1:30143:143 \
+	local/notbit:latest
 ```
 
-Note that on Mac it can be tricky way to access the volume files directly, so you may prefer to map just exisitng folder:
+Note that on Mac it can be tricky way to access the volume files directly, so
+you may prefer to map just exisitng folder:
 
 ```bash
 docker run -v /Users/anonymous/notbit-data:/data -d --name notbit \
-	-p 8444:8444 -p 127.0.0.1:30025:25 -p 127.0.0.1:30143:143 local/notbit:latest
+	-p 8444:8444 -p 127.0.0.1:30025:25 -p 127.0.0.1:30143:143 \
+	local/notbit:latest
 ```
 
 
-From example above you can setup the Thunderbird to use IMAP from `localhost`, port `143`, user: `user`, password: `0notbit0`.
-For sending use SMTP `localhost` port `25` (no auth and credential)
+From example above you can setup the Thunderbird to use IMAP from `localhost`,
+port `30143`, user: `user`, password: `0notbit0`.
+For sending use SMTP `localhost` port `30025` (no auth and credential)
 
-Not that in example above port `25`,`143` are mapped to `127.0.0.1` only so IMAP and SMTP can be accessed only from local machine.
+Not that in example above port `30025`,`30143` are mapped to `127.0.0.1` only
+so IMAP and SMTP can be accessed only from local machine.
 
-Port `8444` (bitmessage) is mapped to all interfaces to make network connectivity with other peers.
+Port `8444` (bitmessage) is mapped to all interfaces to make network
+connectivity with other peers.
 
 # Creating an address
 
-On first run (so no keys.dat file `<docker volume>/notbit/keys.dat`) the initialization script will create your first
-personal address and send welcome email from yourself so you identify your `From` address for further use in emails
-as sender - appropriate key will be used from keys.dat.
+On first run (so no keys.dat file `<docker volume>/notbit/keys.dat`) the
+initialization script will create your first personal address and send
+welcome email from yourself so you identify your `From` address for
+further use in emails as sender - appropriate key will be used from
+keys.dat.
 
 # Importing addresses
 
@@ -83,7 +95,3 @@ Note that any messages you send must have the content type set to
 `text/plain` and can't contain any attachments. This means that HTML
 messages won't work. They must use either the us-ascii encoding or
 UTF-8.
-
-
-
-

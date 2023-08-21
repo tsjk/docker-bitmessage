@@ -1,4 +1,4 @@
-FROM alpine:3.13 as builder
+FROM alpine:3.16 as builder
 
 SHELL ["/bin/sh", "-euo", "pipefail", "-xc"]
 
@@ -33,11 +33,13 @@ RUN apk --no-cache -U upgrade \
 	&& ( cd /usr/local/src/notbit \
 		&& patch -p1 < /usr/local/src/notbit-alpine.patch \
 		&& make && make install ) \
-	&& ldd /bin/notbit && ( /bin/notbit -h || : )
+	&& ldd /bin/notbit \
+	&& { /bin/notbit -h || true; } &> /tmp/notbit.out\
+	&& grep -q -E '^Notbit - a Bitmessage → maildir daemon\.' /tmp/notbit.out\
+	&& rm /tmp/notbit.out
 
 
-
-FROM alpine:3.13 as notbit
+FROM alpine:3.16 as notbit
 
 SHELL ["/bin/sh", "-euo", "pipefail", "-xc"]
 
@@ -55,18 +57,20 @@ COPY firstrun.sh /firstrun.sh
 COPY dovecot.conf /etc/dovecot/dovecot.conf
 
 RUN ldd /bin/notbit \
-	&& ( /bin/notbit -h || : ) \
+	&& { /bin/notbit -h || true; } &> /tmp/notbit.out\
+	&& grep -q -E '^Notbit - a Bitmessage → maildir daemon\.' /tmp/notbit.out\
+	&& rm /tmp/notbit.out\
 	&& mkdir /data \
 	&& mkdir /data/notbit \
 	&& mkdir /data/maildir \
 	&& apk --no-cache add dovecot \
-	&& adduser -D user \
+	&& adduser -u 1001 -D user \
 	&& echo user:0notbit0 | chpasswd \
 	&& ( cd /home/user && ln -s /data/maildir ) \
 	&& chown -R -c user:user /data
 
 WORKDIR /home/user
-ENV SOCKS_ADDRESS
+ENV SOCKS_ADDRESS=""
 VOLUME ["/data"]
 EXPOSE 25 143 8444
 ENTRYPOINT ["/entrypoint.sh"]

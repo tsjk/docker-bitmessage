@@ -1,0 +1,4 @@
+[submodule "notbit"]
+	path = notbit
+	url = https://github.com/yshurik/notbit.git
+	branch = smtp

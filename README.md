@@ -33,11 +33,11 @@ docker volume create notbit-data
 ```
 
 Then the docker container can be started with appropriate port mappings for
-IMAP (`30143`) and SMTP (`30025`).
+IMAP (`60143`) and SMTP (`60025`).
 
 ```bash
 docker run -v notbit-data:/data -d --name notbit \
-	-p 8444:8444 -p 127.0.0.1:30025:25 -p 127.0.0.1:30143:143 \
+	-p 8444:8444 -p 127.0.0.1:60025:25 -p 127.0.0.1:60143:143 \
 	local/notbit:latest
 ```
 
@@ -46,16 +46,16 @@ you may prefer to map just exisitng folder:
 
 ```bash
 docker run -v /Users/anonymous/notbit-data:/data -d --name notbit \
-	-p 8444:8444 -p 127.0.0.1:30025:25 -p 127.0.0.1:30143:143 \
+	-p 8444:8444 -p 127.0.0.1:60025:25 -p 127.0.0.1:60143:143 \
 	local/notbit:latest
 ```
 
 
 From example above you can setup the Thunderbird to use IMAP from `localhost`,
-port `30143`, user: `user`, password: `0notbit0`.
-For sending use SMTP `localhost` port `30025` (no auth and credential)
+port `60143`, user: `user`, password: `0notbit0`.
+For sending use SMTP `localhost` port `60025` (no auth and credential)
 
-Not that in example above port `30025`,`30143` are mapped to `127.0.0.1` only
+Not that in example above port `60025`,`60143` are mapped to `127.0.0.1` only
 so IMAP and SMTP can be accessed only from local machine.
 
 Port `8444` (bitmessage) is mapped to all interfaces to make network
@@ -79,7 +79,7 @@ type:
 ```bash
 docker stop notbit
 cp ~/.config/PyBitmessage/keys.dat <docker volume location>/notbit/keys.dat
-chown 1000.1000 <docker volume location>/notbit/keys.dat
+chown 1001:1001 <docker volume location>/notbit/keys.dat
 docker start notbit
 ```
 

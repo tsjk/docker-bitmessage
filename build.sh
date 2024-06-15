@@ -1,3 +1,3 @@
 #!/bin/sh
-docker build -t local/bitmessage .
+docker build -t local/notbit .
 

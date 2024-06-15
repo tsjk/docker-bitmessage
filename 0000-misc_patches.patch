@@ -1,0 +1,428 @@
+--- notbit/src/ntb-base58.h.orig	2024-06-19 18:59:48.472811767 +0200
++++ notbit/src/ntb-base58.h	2024-06-19 20:24:07.192181550 +0200
+@@ -26,6 +26,7 @@
+ 
+ #include <stdint.h>
+ #include <stdlib.h>
++#include <sys/types.h>
+ 
+ #include "ntb-util.h"
+ 
+--- notbit/src/ntb-base64.h.orig	2024-06-19 18:59:48.473811773 +0200
++++ notbit/src/ntb-base64.h	2024-06-19 20:24:07.192181550 +0200
+@@ -26,6 +26,7 @@
+ 
+ #include <stdlib.h>
+ #include <stdint.h>
++#include <sys/types.h>
+ 
+ #include "ntb-error.h"
+ 
+--- notbit/src/ntb-daemon.c.orig	2024-06-19 18:59:48.475811785 +0200
++++ notbit/src/ntb-daemon.c	2024-06-19 20:28:52.981903783 +0200
+@@ -345,11 +345,6 @@
+                 ntb_warning("chdir failed: %s", strerror(errno));
+                 exit(EXIT_FAILURE);
+         }
+-
+-        /* Redirect standard files to /dev/null */
+-        stdin = freopen("/dev/null", "r", stdin);
+-        stdout = freopen("/dev/null", "w", stdout);
+-        stderr = freopen("/dev/null", "w", stderr);
+ }
+ 
+ static void
+--- notbit/src/ntb-ipc.c.orig	2024-06-19 18:59:48.477811797 +0200
++++ notbit/src/ntb-ipc.c	2024-06-19 20:24:07.193181557 +0200
+@@ -378,8 +378,8 @@
+                 send_response(conn,
+                               email->request_id,
+                               NTB_IPC_PROTO_STATUS_INVALID_EMAIL,
+-                              "Error parsing email: %s",
+-                              error->message);
++                              "Error parsing email: %s, %s",
++                              error->message, (char *)buf);
+                 ntb_error_free(error);
+                 remove_email(email);
+         }
+--- notbit/src/ntb-network.c.orig	2024-06-19 20:23:00.095777324 +0200
++++ notbit/src/ntb-network.c	2024-06-19 20:24:07.194181563 +0200
+@@ -267,17 +267,28 @@
+ 
+ static const char *
+ default_addrs[] = {
+-        /* These are the addresses from the official Python client */
+-        "176.31.246.114:8444",
+-        "109.229.197.133:8444",
+-        "174.3.101.111:8444",
+-        "90.188.238.79:7829",
+-        "184.75.69.2:8444",
+-        "60.225.209.243:8444",
+-        "5.145.140.218:8444",
+-        "5.19.255.216:8444",
+-        "193.159.162.189:8444",
+-        "86.26.15.171:8444"
++	"5.45.99.75:8444",	// from https://github.com/Bitmessage/PyBitmessage/blob/v0.6/src/network/knownnodes.py 205e25337f53f6d6baa8fbcff8ae59276f75de9b
++	"75.167.159.54:8444",	// from https://github.com/Bitmessage/PyBitmessage/blob/v0.6/src/network/knownnodes.py 205e25337f53f6d6baa8fbcff8ae59276f75de9b
++	"95.165.168.168:8444",	// from https://github.com/Bitmessage/PyBitmessage/blob/v0.6/src/network/knownnodes.py 205e25337f53f6d6baa8fbcff8ae59276f75de9b
++	"85.180.139.241:8444",	// from https://github.com/Bitmessage/PyBitmessage/blob/v0.6/src/network/knownnodes.py 205e25337f53f6d6baa8fbcff8ae59276f75de9b
++	"158.222.217.190:8080",	// from https://github.com/Bitmessage/PyBitmessage/blob/v0.6/src/network/knownnodes.py 205e25337f53f6d6baa8fbcff8ae59276f75de9b
++	"178.62.12.187:8448",	// from https://github.com/Bitmessage/PyBitmessage/blob/v0.6/src/network/knownnodes.py 205e25337f53f6d6baa8fbcff8ae59276f75de9b
++	"24.188.198.204:8111",	// from https://github.com/Bitmessage/PyBitmessage/blob/v0.6/src/network/knownnodes.py 205e25337f53f6d6baa8fbcff8ae59276f75de9b
++	"109.147.204.113:1195",	// from https://github.com/Bitmessage/PyBitmessage/blob/v0.6/src/network/knownnodes.py 205e25337f53f6d6baa8fbcff8ae59276f75de9b
++	"178.11.46.221:8444",	// from https://github.com/Bitmessage/PyBitmessage/blob/v0.6/src/network/knownnodes.py 205e25337f53f6d6baa8fbcff8ae59276f75de9b
++	"194.182.189.194:8444",	// strap4.bitmessage.org
++	"194.164.163.84:8444",	// strap6.bitmessage.org
++	"5.135.166.102:8444",	// node5.surda.cloud
++	"144.76.78.214:8444",	// node4.surda.cloud
++	"101.99.86.54:8444",	// node3.surda.cloud
++	"110.4.42.77:8444",	// node2.surda.cloud
++	"93.189.28.85:8444",	// node1.surda.cloud
++        "85.25.152.9:8444",	// bootstrap8444.bitmessage.org
++        "85.114.135.102:8444",	// bootstrap8444.bitmessage.org
++        "185.158.248.216:8444",	// bootstrap8444.bitmessage.org
++        "194.164.163.84:8444",	// bootstrap8444.bitmessage.org
++        "158.69.63.42:8080",	// bootstrap8080.bitmessage.org
++        "185.19.31.46:8080"	// bootstrap8080.bitmessage.org
+ };
+ 
+ static void
+--- notbit/src/ntb-parse-addresses.h.orig	2024-06-19 18:59:48.480811816 +0200
++++ notbit/src/ntb-parse-addresses.h	2024-06-19 20:24:07.193181557 +0200
+@@ -26,6 +26,7 @@
+ 
+ #include <stdbool.h>
+ #include <stdint.h>
++#include <sys/types.h>
+ 
+ #include "ntb-error.h"
+ #include "ntb-buffer.h"
+--- notbit/src/ntb-quoted-printable.h.orig	2024-06-19 18:59:48.480811816 +0200
++++ notbit/src/ntb-quoted-printable.h	2024-06-19 20:24:07.193181557 +0200
+@@ -26,6 +26,7 @@
+ 
+ #include <stdlib.h>
+ #include <stdint.h>
++#include <sys/types.h>
+ 
+ #include "ntb-error.h"
+ 
+--- notbit/src/ntb-smtp.c.orig	2024-06-19 18:59:48.481811822 +0200
++++ notbit/src/ntb-smtp.c	2024-06-19 20:27:59.888583754 +0200
+@@ -46,9 +46,9 @@
+ #include "ntb-smtp.h"
+ #include "ntb-util.h"
+ 
+-/* Force the user to use localhost, because there is no support 
++/* In a container, listen on all interfaces even though there is no support
+    for encryption or authentication. */
+-#define SMTP_ADDR "127.0.0.1"
++#define SMTP_ADDR "0.0.0.0"
+ 
+ enum smtp_command {
+         SMTP_COMMAND_HELO,
+@@ -87,8 +87,8 @@
+         pthread_mutex_t lock;
+ };
+ 
+-static void 
+-clear_struct_mail(struct mail *mail) 
++static void
++clear_struct_mail(struct mail *mail)
+ {
+         struct to *tmp, *to;
+         ntb_list_for_each_safe(to, tmp, &mail->to, link) {
+@@ -102,7 +102,7 @@
+ }
+ 
+ static void
+-free_struct_mail(struct mail *mail) 
++free_struct_mail(struct mail *mail)
+ {
+         struct to *tmp, *to;
+         ntb_list_for_each_safe(to, tmp, &mail->to, link) {
+@@ -114,8 +114,8 @@
+         ntb_buffer_destroy(&mail->text);
+ }
+ 
+-static void 
+-init_struct_mail(struct mail *mail) 
++static void
++init_struct_mail(struct mail *mail)
+ {
+         ntb_buffer_init(&mail->from);
+         ntb_list_init(&mail->to);
+@@ -123,14 +123,14 @@
+         mail->smtp_state = SMTP_WAIT_FOR_COMMAND;
+ }
+ 
+-static void 
+-send_str(int sock, const char *data) 
++static void
++send_str(int sock, const char *data)
+ {
+         send(sock, data, strlen(data), 0);
+ }
+ 
+-static void 
+-shift_left(char *buf, int offset) 
++static void
++shift_left(char *buf, int offset)
+ {
+         int i;
+         const int size_to_move = strlen(buf) - offset;
+@@ -139,8 +139,8 @@
+         }
+ }
+ 
+-static bool 
+-process_smtp_command(char *buf, enum smtp_command *smtp_command) 
++static bool
++process_smtp_command(char *buf, enum smtp_command *smtp_command)
+ {
+         if (!strncmp(buf, "HELO", 4)) {
+                 *smtp_command = SMTP_COMMAND_HELO;
+@@ -161,6 +161,7 @@
+ 
+         if (!strncmp(buf, "DATA", 4)) {
+                 *smtp_command = SMTP_COMMAND_DATA;
++                shift_left(buf, 4);
+                 return true;
+         }
+ 
+@@ -183,7 +184,7 @@
+ }
+ 
+ static void
+-convert_line_ends(char *data) 
++convert_line_ends(char *data)
+ {
+         char *tmp = ntb_alloc(strlen(data)+1);
+         int i;
+@@ -200,43 +201,8 @@
+         ntb_free(tmp);
+ }
+ 
+-static void
+-add_bcc_to_text(struct mail *mail)
+-{
+-        struct to *to;
+-        struct ntb_buffer buffer;
+-        bool found_bcc = false;
+-
+-        ntb_buffer_init(&buffer);
+-        ntb_buffer_append(&buffer, "BCC: ", 5);
+-
+-        ntb_list_for_each(to, &mail->to, link) {
+-                if (!strstr((char *)mail->text.data, (char *)to->addr.data)) {
+-                        found_bcc = true;
+-                        ntb_buffer_append(&buffer, 
+-                                          to->addr.data, 
+-                                          to->addr.length-1);
+-                        ntb_buffer_append(&buffer, 
+-                                          ", ", 
+-                                          2);
+-                }
+-        }
+-
+-        if (!found_bcc) {
+-                ntb_buffer_destroy(&buffer);
+-                return;
+-        }
+-
+-        ntb_buffer_set_length(&buffer, buffer.length-2);
+-        ntb_buffer_append_c(&buffer, '\n');
+-        ntb_buffer_append(&buffer, mail->text.data, mail->text.length);
+-        ntb_buffer_set_length(&mail->text, 0);
+-        ntb_buffer_append(&mail->text, buffer.data, buffer.length);
+-        ntb_buffer_destroy(&buffer);
+-}        
+-
+-static bool 
+-process_mail(struct mail *mail, char **error_str) 
++static bool
++process_mail(struct mail *mail, char **error_str)
+ {
+         struct ntb_buffer response_buf;
+         struct ntb_error *error = NULL;
+@@ -256,7 +222,6 @@
+         *error_str = NULL;
+ 
+         convert_line_ends((char *)mail->text.data);
+-        add_bcc_to_text(mail);
+ 
+         ntb_ipc_sockaddr_create(&sockaddr, &sockaddr_len, "smtp");
+         sockaddr_path = ((struct sockaddr_un *) sockaddr)->sun_path;
+@@ -351,8 +316,8 @@
+         return state;
+ }
+ 
+-static int 
+-recv_data(int sock, struct mail *mail) 
++static int
++recv_data(int sock, struct mail *mail)
+ {
+         static struct to *tmp_to;
+         int recv_len;
+@@ -366,7 +331,7 @@
+         if (recv_len == 0 || recv_len == -1) return false;
+ 
+         buf[recv_len] = '\0';
+-        if (!strncmp(&buf[strlen(buf)-2], "\r\n", 2) && 
++        if (!strncmp(&buf[strlen(buf)-2], "\r\n", 2) &&
+             mail->smtp_state != SMTP_RECV_DATA) {
+                 smtp_command_finished = true;
+                 buf[strlen(buf)-2] = '\0';
+@@ -433,12 +398,12 @@
+                         if (!strncmp((char *)&mail->text.data[mail->text.length-5],
+                                      "\r\n.\r\n",
+                                      5)) {
+-                                mail->text.data[mail->text.length-3] = '\0';    
++                                mail->text.data[mail->text.length-3] = '\0';
+                                 if (process_mail(mail, &error_str)) {
+                                         send_str(sock, "250 OK\r\n");
+                                 } else {
+                                         send_str(sock, "553 ");
+-                                        if (error_str) 
++                                        if (error_str)
+                                                 send_str(sock, error_str);
+                                         send_str(sock, "\r\n");
+                                         ntb_free(error_str);
+@@ -476,7 +441,7 @@
+ }
+ 
+ static void*
+-smtp_main_loop(void *data) 
++smtp_main_loop(void *data)
+ {
+         struct ntb_smtp_context *ctx = data;
+         struct mail mail;
+@@ -501,27 +466,27 @@
+                 wait_time.tv_sec = 1;
+                 wait_time.tv_usec = 0;
+ 
+-                if (select(ctx->socket+1, 
+-                           &sock_set, 
+-                           NULL, 
+-                           NULL, 
+-                           &wait_time) == -1) 
++                if (select(ctx->socket+1,
++                           &sock_set,
++                           NULL,
++                           NULL,
++                           &wait_time) == -1)
+                         break;
+ 
+-                if (!FD_ISSET(ctx->socket, &sock_set)) 
++                if (!FD_ISSET(ctx->socket, &sock_set))
+                         continue;
+ 
+                 sock = accept(ctx->socket, NULL, NULL);
+                 if (sock < 0) {
+                         ntb_close(sock);
+                         continue;
+-                } else {        
++                } else {
+                         send_str(sock, "220 ");
+                         send_str(sock, SMTP_ADDR);
+                         send_str(sock, " SMTP\r\n");
+                 }
+ 
+-                while (recv_data(sock, &mail)); 
++                while (recv_data(sock, &mail));
+                 ntb_close(sock);
+                 clear_struct_mail(&mail);
+         }
+@@ -529,7 +494,7 @@
+         return NULL;
+ }
+ 
+-struct ntb_smtp_context* 
++struct ntb_smtp_context*
+ ntb_smtp_start(int port) {
+         const int true_value = true;
+         struct ntb_netaddress address;
+@@ -543,11 +508,11 @@
+                 ntb_log("Invalid port for SMTP server: %d!", port);
+                 return NULL;
+         }
+-        ntb_netaddress_to_native(&address, &native_address); 
++        ntb_netaddress_to_native(&address, &native_address);
+ 
+         ctx->socket = socket(native_address.sockaddr.sa_family == AF_INET6 ?
+-                             PF_INET6 : PF_INET, 
+-                             SOCK_STREAM, 
++                             PF_INET6 : PF_INET,
++                             SOCK_STREAM,
+                              0);
+         if (ctx->socket < 0) {
+                 ntb_log("Can't open socket for SMTP server.");
+@@ -555,13 +520,13 @@
+         }
+ 
+         setsockopt(ctx->socket,
+-                   SOL_SOCKET, 
++                   SOL_SOCKET,
+                    SO_REUSEADDR,
+-                   &true_value, 
++                   &true_value,
+                    sizeof true_value);
+ 
+-        if (bind(ctx->socket, 
+-                 &native_address.sockaddr, 
++        if (bind(ctx->socket,
++                 &native_address.sockaddr,
+                  native_address.length) < 0) {
+                 ntb_log("Can't bind socket for SMTP server.");
+                 return NULL;
+@@ -570,13 +535,13 @@
+         if (listen(ctx->socket, 5) < 0) {
+                 ntb_log("Can't listen on socket for SMTP server.");
+                 return NULL;
+-        } 
+-        
++        }
++
+         ctx->thread = ntb_create_thread(smtp_main_loop, ctx);
+         return ctx;
+ }
+ 
+-void ntb_smtp_stop(struct ntb_smtp_context *ctx) 
++void ntb_smtp_stop(struct ntb_smtp_context *ctx)
+ {
+         pthread_mutex_lock(&ctx->lock);
+         ctx->exit = true;
+--- notbit/src/ntb-connection.c.orig
++++ notbit/src/ntb-connection.c
+@@ -252,7 +252,7 @@ addr_command_handler(struct ntb_connection *conn,
+                                               NTB_PROTO_ARGUMENT_END);
+
+                 if (addr_length == -1)
+-                        goto error;
++                    return false;
+
+                 command_length -= addr_length;
+                 data += addr_length;
+--- notbit/src/ntb-connection.c.orig
++++ notbit/src/ntb-connection.c
+@@ -294,7 +294,7 @@ getdata_command_handler(struct ntb_connection *conn,
+         return true;
+ 
+ error:
+-        ntb_log("Invalid addr command received from %s",
++        ntb_log("Invalid getdata command received from %s",
+                 conn->remote_address_string);
+         set_error_state(conn);
+         return false;
+--- notbit/src/ntb-netaddress.c.orig
++++ notbit/src/ntb-netaddress.c
+@@ -238,6 +238,9 @@ ntb_netaddress_is_allowed(const struct ntb_netaddress *address,
+ {
+         const uint8_t *host;
+
++        if (address->port == 0)
++                return false;
++
+         if (ntb_netaddress_is_ipv6(address)) {
+                 /* IPv6 */
+                 /* Ignore localhost */
